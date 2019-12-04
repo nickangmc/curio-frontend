@@ -238,7 +238,9 @@ const mapStateToProps = state => ({
   groups: state.groups
 });
 
-export default connect(
-  mapStateToProps,
-  { getUserData, getUserArtefacts, getUserGroups, getUserNotifications }
-)(Scenes);
+export default connect(mapStateToProps, {
+  getUserData,
+  getUserArtefacts,
+  getUserGroups,
+  getUserNotifications
+})(Scenes);

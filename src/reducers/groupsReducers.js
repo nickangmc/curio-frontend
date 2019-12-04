@@ -21,7 +21,7 @@ export default function(state = initialState, action) {
       };
     case SET_GROUP_IN_CACHE:
       // access cache from store
-      let { cache } = state;
+      const { cache } = state;
       // extract action data
       const { payload, cache_type } = action;
       // if group is not in cache, initialize it

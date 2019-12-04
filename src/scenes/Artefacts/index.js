@@ -18,7 +18,7 @@ import AddButton from "../../component/AddButton";
 
 // redux actions
 import {
-  createNewArtefacts,
+  createNewArtefact,
   getSelectedArtefact,
   getUserArtefacts,
   getArtefactComments
@@ -29,6 +29,7 @@ import {
   deviceHeigthDimension as hp,
   deviceWidthDimension as wd
 } from "../../utils/responsiveDesign";
+import { ARTEFACT_DATA } from "../../types/artefactsTypes";
 
 class Artefacts extends Component {
   constructor(props) {
@@ -87,7 +88,7 @@ class Artefacts extends Component {
 
   // artefact feed functions //
   // for each individual artefact clicked by user
-  onArtefactClick = async artefactId => {
+  onArtefactClick = artefactId => {
     // redirect user
     this.navigateToPage("SelectedArtefact", { artefactId });
   };
@@ -103,7 +104,7 @@ class Artefacts extends Component {
 
   // component render functions //
   // tell users that they don't have an artefact posted under current privacy tab
-  showNoArtefactsMessage = () => {
+  showEmptyArtefactsMessage = () => {
     // show fade-in animation for this message
     this.startShowing();
     // get current tab setting
@@ -131,10 +132,26 @@ class Artefacts extends Component {
     );
   };
 
+  // retrieve current user's artefacts in the redux cache
+  getUserArtefactsFromCache = () => {
+    // first retrieve all the user's artefacts ids
+    artefactIds = this.props.artefacts.userArtefactIds;
+    // get the actual artefact data based on the ids
+    artefacts = artefactIds.map(id => {
+      // retrieve artefact by id from cache
+      cachedArtefact = this.props.artefacts.cache[id];
+      // return its data if it exists, otherwise return nothing
+      return cachedArtefact ? cachedArtefact[ARTEFACT_DATA] : null;
+    });
+    // return the data
+    return artefacts;
+  };
+
   // show artefacts by privacy settings
   showArtefacts = () => {
     // extract required data
-    artefacts = this.props.artefacts.userArtefacts;
+    artefacts = this.getUserArtefactsFromCache();
+    // check current page's privacy settings
     privacy = this.state.isPublicTab ? 0 : 1;
     // filter artefacts by their privacy settings
     artefacts = artefacts.filter(x => x.privacy == privacy);
@@ -146,8 +163,8 @@ class Artefacts extends Component {
         onPress={this.onArtefactClick.bind(this)}
       />
     ) : (
-      // no artefacts on current tab
-      this.showNoArtefactsMessage()
+      // no artefacts on current tab, show empty message
+      this.showEmptyArtefactsMessage()
     );
   };
 
@@ -225,7 +242,7 @@ Artefacts.propTypes = {
   artefacts: PropTypes.object.isRequired,
   auth: PropTypes.object.isRequired,
   getUserArtefacts: PropTypes.func.isRequired,
-  createNewArtefacts: PropTypes.func.isRequired
+  createNewArtefact: PropTypes.func.isRequired
 };
 
 // map required redux state to local props
@@ -235,12 +252,9 @@ const mapStateToProps = state => ({
 });
 
 // map required redux state and actions to local props
-export default connect(
-  mapStateToProps,
-  {
-    createNewArtefacts,
-    getSelectedArtefact,
-    getUserArtefacts,
-    getArtefactComments
-  }
-)(Artefacts);
+export default connect(mapStateToProps, {
+  createNewArtefact,
+  getSelectedArtefact,
+  getUserArtefacts,
+  getArtefactComments
+})(Artefacts);

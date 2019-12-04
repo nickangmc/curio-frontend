@@ -2,7 +2,8 @@ import {
   SET_USER_ARTEFACTS,
   SET_ARTEFACT_IN_CACHE,
   ARTEFACT_DATA,
-  ARTEFACT_COMMENTS
+  ARTEFACT_COMMENTS,
+  ARTEFACT_OWNER
 } from "../types/artefactsTypes";
 
 import {
@@ -20,9 +21,10 @@ import {
 import { getUserNotifications } from "../actions/notificationActions";
 
 import { uploadImageToGCS } from "../utils/imageUpload";
+import { getSelectedUser } from "../actions/userActions";
 
 // Async Redux actions //
-// get all artefacts of user based on userId
+// get all artefacts of an user based on userId
 export const getUserArtefacts = userId => dispatch => {
   return new Promise((resolve, reject) => {
     // get all artefacts posted by user
@@ -40,10 +42,10 @@ export const getUserArtefacts = userId => dispatch => {
   });
 };
 
-// register user based on user details
-export const createNewArtefacts = artefact => dispatch => {
+// create a new artefact in the databse based on the artefact data given
+export const createNewArtefact = artefact => dispatch => {
   return new Promise((resolve, reject) => {
-    // upload image
+    // upload image first
     uploadImageToGCS(artefact.imageURI)
       .then(imageURL => {
         // prepare the body data base on new user details
@@ -55,7 +57,7 @@ export const createNewArtefacts = artefact => dispatch => {
         // send a post API request to backend to create new artefact
         createArtefactAPIRequest(newArtefact)
           .then(res => {
-            // reload user artefacts data
+            // reload and update user's artefacts data
             dispatch(getUserArtefacts(newArtefact.userId));
             resolve(res);
           })
@@ -71,15 +73,15 @@ export const createNewArtefacts = artefact => dispatch => {
   });
 };
 
-// select artefact of artefactId
-export const getSelectedArtefact = artefactId => (dispatch, getState) => {
+// retrieve artefact's data via artefactId and save it to cache
+export const getSelectedArtefact = artefactId => dispatch => {
   return new Promise((resolve, reject) => {
-    // continue updating the artefact in the background
+    // send API request for the artefact details
     getSelectedArtefactAPIRequest(artefactId)
       .then(res => {
-        // save artefact in cache
+        // save artefact's data in cache
         dispatch(setArtefactDataInCache(res.data));
-        // return artefact data if it hasn't already
+        // return the data incase it's needed
         resolve(res.data);
       })
       .catch(err => {
@@ -89,28 +91,30 @@ export const getSelectedArtefact = artefactId => (dispatch, getState) => {
   });
 };
 
-// update selected artefact
+// update the selected artefact using new artefact data in the parameter
 export const editSelectedArtefact = artefact => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
+    // decides if a new image upload is required
     (() => {
-      // if a new image is selected, the imageURI would not be empty
-      // so upload to GCS is required, otherwise just retain the old URL link
+      // if a new image is selected by the user, the imageURI field would not
+      // be empty so upload to GCS is required, otherwise just retain the old
+      // URL link
       return !artefact.imageURI
         ? Promise.resolve(artefact.images[0].URL)
         : uploadImageToGCS(artefact.imageURI);
     })()
       .then(imageURL => {
-        // prepare the body data base on new user details
+        // insert the imageURL prepared to the artefact data field
         const artefactData = {
           ...artefact,
           images: [{ URL: imageURL }]
         };
-        // update artefact in the backend
+        // send an API artefact update request to the backend
         updateSelectedArtefactAPIRequest(artefact._id, artefactData)
           .then(res => {
-            // reload all user artefacts data
+            // reload and update user's artefacts data
             dispatch(getUserArtefacts(getState().auth.user.id));
-            // return artefact data
+            // return the artefact's data
             resolve(res.data);
           })
           .catch(err => {
@@ -119,18 +123,19 @@ export const editSelectedArtefact = artefact => (dispatch, getState) => {
           });
       })
       .catch(err => {
-        console.log("Failed to update artefact" + err);
+        console.log("Failed to get artefact's URL" + err);
         reject(err);
       });
   });
 };
 
-// delete selected artefact
+// delete the selected artefact specified by the parameter artefactId
 export const removeSelectedArtefact = artefactId => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
+    // send a API delete request to the backend
     deleteSelectedArtefactAPIRequest(artefactId)
       .then(res => {
-        // reload data
+        // reload and update user's artefact data, as well as user's notifications
         dispatch(getUserArtefacts(getState().auth.user.id));
         dispatch(getUserNotifications(getState().auth.user.id));
         resolve(res);
@@ -178,16 +183,36 @@ export const unlikeArtefact = (artefactId, userId) => dispatch => {
   });
 };
 
+export const getArtefactOwner = (artefactId, ownerId) => dispatch => {
+  return new Promise((resolve, reject) => {
+    getSelectedUser(ownerId)
+      .then(res => {
+        console.log(res.data);
+        dispatch(
+          setArtefactOwnerInCache({
+            ...res.data
+          })
+        );
+        resolve(res.data);
+      })
+      .catch(err => {
+        console.log("Failed to get artefact owner: " + err);
+        reject(err);
+      });
+  });
+};
+
 // get all comments made about an artefact
 export const getArtefactComments = artefactId => dispatch => {
   return new Promise((resolve, reject) => {
+    // send API get request for the artefact comments
     getArtefactCommentsAPIRequest(artefactId)
-      // success
       .then(res => {
+        // save artefact's comments in cache
+        dispatch(setArtefactCommentsInCache(res.data));
         // return data
         resolve(res.data);
       })
-      // failure
       .catch(err => {
         console.log("Failed to get artefact comments: " + err);
         reject(err);
@@ -204,6 +229,8 @@ export const commentOnArtefact = (artefactId, userId, commentString) => dispatch
     postArtefactCommentAPIRequest(artefactId, userId, newComment)
       // success
       .then(res => {
+        // retrieve latest comments and save it (not most efficient)
+        dispatch(getArtefactComments(artefactId));
         resolve(res.data);
       })
       // failure
@@ -222,7 +249,7 @@ export const setUserArtefacts = decoded => {
     payload: decoded
   };
 };
-
+// save the artefact details to the cache based on the id
 export const setArtefactDataInCache = decoded => {
   return {
     type: SET_ARTEFACT_IN_CACHE,
@@ -230,11 +257,19 @@ export const setArtefactDataInCache = decoded => {
     cache_type: ARTEFACT_DATA
   };
 };
-
+// save the artefact comments to the cache based on the id
 export const setArtefactCommentsInCache = decoded => {
   return {
     type: SET_ARTEFACT_IN_CACHE,
     payload: decoded,
     cache_type: ARTEFACT_COMMENTS
+  };
+};
+
+export const setArtefactOwnerInCache = decoded => {
+  return {
+    type: SET_ARTEFACT_IN_CACHE,
+    payload: decoded,
+    cache_type: ARTEFACT_OWNER
   };
 };

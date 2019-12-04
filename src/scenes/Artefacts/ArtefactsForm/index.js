@@ -14,7 +14,7 @@ import {
 
 // redux actions
 import {
-  createNewArtefacts,
+  createNewArtefact,
   editSelectedArtefact
 } from "../../../actions/artefactsActions";
 
@@ -209,7 +209,7 @@ class ArtefactsForm extends Component {
     (() => {
       return isEditMode
         ? this.props.editSelectedArtefact(this.state.artefact)
-        : this.props.createNewArtefacts(this.state.artefact).then(res => {
+        : this.props.createNewArtefact(this.state.artefact).then(res => {
           // check if it should add the artefact to group
           return addToGroup
             ? this.props.addArtefactToGroup(groupId, res.data._id)
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
 ArtefactsForm.propTypes = {
   artefacts: PropTypes.object.isRequired,
   auth: PropTypes.object.isRequired,
-  createNewArtefacts: PropTypes.func.isRequired
+  createNewArtefact: PropTypes.func.isRequired
 };
 
 // map required redux state to local props
@@ -586,5 +586,5 @@ const mapStateToProps = state => ({
 // map required redux state and actions to local props
 export default connect(
   mapStateToProps,
-  { createNewArtefacts, editSelectedArtefact, addArtefactToGroup }
+  { createNewArtefact, editSelectedArtefact, addArtefactToGroup }
 )(ArtefactsForm);

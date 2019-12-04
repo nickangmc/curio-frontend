@@ -124,6 +124,8 @@ class SelectedArtefact extends Component {
       });
   }
 
+  getArtefactDetails = () => {};
+
   // nav details
   static navigationOptions = {
     header: null,
@@ -559,19 +561,16 @@ const mapStateToProps = state => ({
 });
 
 // map required redux state and actions to local props
-export default connect(
-  mapStateToProps,
-  {
-    editSelectedArtefact,
-    getSelectedArtefact,
-    getUserArtefacts,
-    removeSelectedArtefact,
-    likeArtefact,
-    unlikeArtefact,
-    getArtefactComments,
-    commentOnArtefact,
-    clearSelectedArtefact,
-    getSelectedGroupAllArtefacts,
-    getSelectedUser
-  }
-)(SelectedArtefact);
+export default connect(mapStateToProps, {
+  editSelectedArtefact,
+  getSelectedArtefact,
+  getUserArtefacts,
+  removeSelectedArtefact,
+  likeArtefact,
+  unlikeArtefact,
+  getArtefactComments,
+  commentOnArtefact,
+  clearSelectedArtefact,
+  getSelectedGroupAllArtefacts,
+  getSelectedUser
+})(SelectedArtefact);
