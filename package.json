@@ -15,7 +15,7 @@
     "expo-image-manipulator": "^6.0.0",
     "expo-image-picker": "^6.0.0",
     "is-empty": "^1.2.0",
-    "jquery": "^3.4.1",
+    "jquery": "^3.5.0",
     "jwt-decode": "^2.2.0",
     "lottie-react-native": "~2.6.1",
     "moment": "^2.24.0",
